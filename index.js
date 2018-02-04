@@ -1,87 +1,122 @@
-'use strict';
+// inspired by
+// https://github.com/yamill/react-native-inviewport
+// which is inspired by
+// https://github.com/joshwnj/react-visibility-sensor
 
-var React = require('react-native');
-var window = React.Dimensions.get('window');
-var {View, NativeMethodsMixin} = React;
+import React from 'react';
+import { View } from 'react-native';
+import PropTypes from 'prop-types';
+import globalStyles from 'app/constants/styles';
 
-module.exports = React.createClass({
-  displayName: 'InViewPort',
-  mixins: [NativeMethodsMixin],
-  propTypes: {
-    onChange: React.PropTypes.func.isRequired,
-    active: React.PropTypes.bool,
-    delay: React.PropTypes.number
-  },
+class VisibilitySensor extends React.Component {
 
-  getDefaultProps: function () {
-    return {
-      active: true,
-      delay: 100
+    static propTypes = {
+        active: PropTypes.bool,
+        delay: PropTypes.number,
     };
-  },
 
-  getInitialState: function(){
-    return {
-      rectTop: 0,
-      rectBottom: 0
+    static defaultProps = {
+        active: true,
+        delay: 100,
+    };
+
+    state = {
+        rectTop: 0,
+        rectBottom: 0,
+    };
+
+    componentDidMount() {
+
+        const { active } = this.props;
+
+        if (active) {
+            this.startWatching();
+        }
     }
-  },
-  componentDidMount: function () {
-    if (this.props.active) {
-      this.startWatching();
+
+    componentWillUnmount() {
+
+        this.stopWatching();
+
     }
-  },
 
-  componentWillUnmount: function () {
-    this.stopWatching();
-  },
+    componentWillReceiveProps(nextProps) {
 
-  componentWillReceiveProps: function (nextProps) {
-    if (nextProps.active) {
-      this.lastValue = null;
-      this.startWatching();
-    } else {
-      this.stopWatching();
+        const { active } = nextProps;
+
+        if (active) {
+            this.lastValue = null;
+            this.startWatching();
+        } else {
+            this.stopWatching();
+        }
+
     }
-  },
 
-  startWatching: function () {
-    if (this.interval) { return; }
-    this.interval = setInterval(this.check, this.props.delay);
-  },
+    startWatching = () => {
 
-  stopWatching: function () {
-    this.interval = clearInterval(this.interval);
-  },
-  /**
-   * Check if the element is within the visible viewport
-   */
-  check: function () {
-    var el = this.refs.myview;
-    var rect = el.measure((ox, oy, width, height, pageX, pageY) => {
-      this.setState({
-        rectTop: pageY,
-        rectBottom: pageY + height,
-        rectWidth: pageX + width,
-      })
-    });
-    var isVisible = (
-      this.state.rectBottom != 0 && this.state.rectTop >= 0 && this.state.rectBottom <= window.height &&
-      this.state.rectWidth > 0 && this.state.rectWidth <= window.width
-    );
+        const { delay } = this.props;
 
-    // notify the parent when the value changes
-    if (this.lastValue !== isVisible) {
-      this.lastValue = isVisible;
-      this.props.onChange(isVisible);
+        if (this.interval) {
+            return;
+        }
+
+        this.interval = setInterval(this.check, delay);
+
+    };
+
+    stopWatching = () => {
+
+        this.interval = clearInterval(this.interval);
+
+    };
+
+    check = () => {
+
+        const { onChange } = this.props;
+        const ref = this.refs.view;
+        const width = globalStyles.dimensions.getWidth();
+        const height = globalStyles.dimensions.getHeight();
+
+        ref.measure((ox, oy, width, height, pageX, pageY) => {
+
+            this.setState({
+                rectTop: pageY,
+                rectBottom: pageY + height,
+                rectWidth: pageX + width,
+            })
+
+        });
+
+        const isVisible = (
+            (this.state.rectBottom !== 0) &&
+            (this.state.rectTop >= 0) &&
+            (this.state.rectBottom <= height) &&
+            (this.state.rectWidth > 0) &&
+            (this.state.rectWidth <= width)
+        );
+
+        // notify the parent when the value changes
+
+        if (this.lastValue !== isVisible) {
+            this.lastValue = isVisible;
+            onChange(isVisible);
+        }
+
+    };
+
+    render() {
+
+        const { active, delay, children } = this.props;
+
+        return (
+            <View ref="view" active={active} delay={delay}>
+                {children}
+            </View>
+        );
+
     }
-  },
 
-  render: function () {
-    return (
-      <View ref='myview' {...this.props}>
-        {this.props.children}
-      </View>
-    );
-  }
-});
+}
+
+export default VisibilitySensor;
