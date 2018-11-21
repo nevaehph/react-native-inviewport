@@ -1,11 +1,14 @@
 import React, { Component } from 'react';
+import PropTypes from 'prop-types';
 import { View, NativeMethodsMixin, Dimensions } from 'react-native';
 
-exports.InViewPort = class extends Component {
+
+class InViewPort extends Component {
   constructor(props) {
     super(props);
     this.state = { rectTop: 0, rectBottom: 0 };
   }
+
   componentDidMount() {
     if (!this.props.disabled) {
       this.startWatching();
@@ -76,3 +79,17 @@ exports.InViewPort = class extends Component {
     );
   }
 };
+
+InViewPort.propTypes = {
+  delay: PropTypes.number,
+  disabled: PropTypes.bool,
+  onChange: PropTypes.func
+};
+
+InViewPort.defaultProps = {
+  delay: 100,
+  disabled: false,
+  onChange: null
+};
+
+export default InViewPort;
